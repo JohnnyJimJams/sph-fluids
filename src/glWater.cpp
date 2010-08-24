@@ -1,4 +1,6 @@
 #include <iostream>
+#include <sys/time.h>
+#include <cstdio>
 #include <GL/glut.h>
 
 #include "sph.h"
@@ -238,7 +240,16 @@ void display()
 
 	extract_gravity_direction();
 
+
+	timeval tv1, tv2;
+	gettimeofday(&tv1, NULL);
+
 	update(add_global_forces, handle_collisions);
+
+	gettimeofday(&tv2, NULL);
+
+	int elapsed = 1000000 * (tv2.tv_sec - tv1.tv_sec) + tv2.tv_usec - tv1.tv_usec;
+	printf("%7d microseconds\n", elapsed);
 
 	foreach_particle(draw_particle);
 
