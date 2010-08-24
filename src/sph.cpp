@@ -1,4 +1,5 @@
 #include "sph.h"
+
 #include <iostream>
 
 using namespace std;
@@ -61,13 +62,13 @@ inline float laplacian_viscosity_kernel(const Vector3f &r, const float h)
 inline void add_density(Particle &particle, Particle &neighbour)
 {
 	Vector3f r = particle.position - neighbour.position;
-	particle.density  += neighbour.mass * kernel(r, core_radius);
+	particle.density += neighbour.mass * kernel(r, core_radius);
 }
 
 void sum_density(GridElement &grid_element, Particle &particle)
 {
-	list<Particle> *plist = &grid_element.particles;
-	for (list<Particle>::iterator piter = plist->begin(); piter != plist->end(); piter++)
+	list<Particle> &plist = grid_element.particles;
+	for (list<Particle>::iterator piter = plist.begin(); piter != plist.end(); piter++)
 		add_density(particle, *piter);
 }
 
@@ -92,10 +93,10 @@ inline void sum_all_density(int i, int j, int k, Particle &particle)
 
 void update_density(int i, int j, int k)
 {
-	GridElement *grid_element = &GRID(i, j, k);
+	GridElement &grid_element = GRID(i, j, k);
 
-	list<Particle> *plist = &grid_element->particles;
-	for (list<Particle>::iterator piter = plist->begin(); piter != plist->end(); piter++)
+	list<Particle> &plist = grid_element.particles;
+	for (list<Particle>::iterator piter = plist.begin(); piter != plist.end(); piter++)
 		sum_all_density(i, j, k, *piter);
 }
 
@@ -110,26 +111,26 @@ inline void add_forces(Particle &particle, Particle &neighbour)
 	Vector3f common = 0.5f * gas_constant * (  (particle.density - rest_density)
 	                                + (neighbour.density - rest_density))
 	         * gradient_pressure_kernel(r, core_radius);
-	particle.force  += -neighbour.mass / neighbour.density * common;
+	particle.force += -neighbour.mass / neighbour.density * common;
 
 	/* Compute the viscosity force. */
 	common = mu * (neighbour.velocity - particle.velocity)
 	         * laplacian_viscosity_kernel(r, core_radius);
-	particle.force  += neighbour.mass / neighbour.density * common;
+	particle.force += neighbour.mass / neighbour.density * common;
 
 	/* Compute the gradient of the color field. */
 	common = gradient_kernel(r, core_radius);
-	particle.color_gradient  += neighbour.mass / neighbour.density * common;
+	particle.color_gradient += neighbour.mass / neighbour.density * common;
 
 	/* Compute the gradient of the color field. */
 	float value = laplacian_kernel(r, core_radius);
-	particle.color_laplacian  += neighbour.mass / neighbour.density * value;
+	particle.color_laplacian += neighbour.mass / neighbour.density * value;
 }
 
 void sum_forces(GridElement &grid_element, Particle &particle)
 {
-	list<Particle> *plist = &grid_element.particles;
-	for (list<Particle>::iterator piter = plist->begin(); piter != plist->end(); piter++)
+	list<Particle>  &plist =grid_element.particles;
+	for (list<Particle>::iterator piter = plist.begin(); piter != plist.end(); piter++)
 		add_forces(particle, *piter);
 }
 
@@ -156,9 +157,9 @@ void sum_all_forces(int i, int j, int k, Particle &particle)
 
 void update_forces(int i, int j, int k)
 {
-	GridElement *grid_element = &GRID(i, j, k);
-	list<Particle> *plist = &grid_element->particles;
-	for (list<Particle>::iterator piter = plist->begin(); piter != plist->end(); piter++)
+	GridElement &grid_element = GRID(i, j, k);
+	list<Particle>&plist = grid_element.particles;
+	for (list<Particle>::iterator piter = plist.begin(); piter != plist.end(); piter++)
 		sum_all_forces(i, j, k, *piter);
 }
 
@@ -183,10 +184,10 @@ inline void update_position(Particle &particle)
 
 void update_particles(int i, int j, int k)
 {
-	GridElement *grid_element = &GRID(i, j, k);
+	GridElement &grid_element = GRID(i, j, k);
 
-	list<Particle> *plist = &grid_element->particles;
-	for (list<Particle>::iterator piter = plist->begin(); piter != plist->end(); piter++)
+	list<Particle> &plist = grid_element.particles;
+	for (list<Particle>::iterator piter = plist.begin(); piter != plist.end(); piter++)
 	{
 		update_velocity(*piter);
 		update_position(*piter);
@@ -195,10 +196,10 @@ void update_particles(int i, int j, int k)
 
 inline void insert_into_grid(int i, int j, int k)
 {
-	GridElement *grid_element = &GRID(i, j, k);
+	GridElement &grid_element = GRID(i, j, k);
 
-	list<Particle> *plist = &grid_element->particles;
-	for (list<Particle>::iterator piter = plist->begin(); piter != plist->end(); piter++)
+	list<Particle> &plist = grid_element.particles;
+	for (list<Particle>::iterator piter = plist.begin(); piter != plist.end(); piter++)
 		ADD_TO_GRID(sleeping_grid, *piter);
 }
 
