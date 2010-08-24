@@ -219,9 +219,7 @@ void update_grid()
 			}
 
 	/* Swap the grids. */
-	GridElement	*temp = grid;
-	grid = sleeping_grid;
-	sleeping_grid = temp;
+	swap(grid, sleeping_grid);
 }
 
 void update(void(*inter_hook)() = NULL, void(*post_hook)() = NULL)

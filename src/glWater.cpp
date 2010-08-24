@@ -12,33 +12,29 @@ using namespace std;
 #define DEPTH		10
 
 
-int			wndWidth = 700, wndHeight = 700;
+int wndWidth = 700, wndHeight = 700;
 
-int			oldX, oldY, rotX = 0, rotY = 0, zoomZ = 0;
-int			oldTransX, oldTransY, transX = 0, transY = 0;
-bool		zoom, trans;
+int oldX, oldY, rotX = 0, rotY = 0, zoomZ = 0;
+int oldTransX, oldTransY, transX = 0, transY = 0;
+bool zoom, trans;
 
-GLfloat		rotation_matrix[16];
+GLfloat rotation_matrix[16];
 
-Vector3f	gravity_direction;
+Vector3f gravity_direction;
 
 
 extern void init_particles(Particle *particles, int count);
 extern void update(void(*inter_hook)() = NULL, void(*post_hook)() = NULL);
 
-const int	particle_count = 400;
+const int particle_count = 400;
 
 
 void init_liquid()
 {
-	Particle	*particles;
-	Particle	*particle_iter;
-	int			count;
+	Particle *particles = new Particle[particle_count];
 
-	particles = new Particle[particle_count];
-
-	count = particle_count;
-	particle_iter = particles;
+	int count = particle_count;
+	Particle *particle_iter = particles;
 	for (int j = 0; j < HEIGHT; j++)
 		for (int k = 0; k < DEPTH; k++)
 			for (int i = 0; i < WIDTH / 2; i++)
@@ -58,8 +54,6 @@ void init_liquid()
 
 void draw_particle(Particle &particle)
 {
-	Vector3f	pos;
-
 	glTranslatef(+particle.position.x, +particle.position.y, +particle.position.z);
 	glutSolidSphere(0.5, 20, 20);
 	glDisable(GL_LIGHTING);
@@ -86,10 +80,8 @@ void add_global_forces()
 
 void handle_particle_collision(Particle &particle)
 {
-	Vector3f	distance, mid;
-
-	mid = Vector3f(WIDTH, 0.0f, DEPTH) / 2.0f;
-	distance = Vector3f(particle.position.x, 0.0f, particle.position.z) - mid;
+	Vector3f mid = Vector3f(WIDTH, 0.0f, DEPTH) / 2.0f;
+	Vector3f distance = Vector3f(particle.position.x, 0.0f, particle.position.z) - mid;
 
 	if (length(distance) >= WIDTH / 2)
 	{
@@ -239,7 +231,6 @@ void display()
 	rotX = rotY = 0;
 
 	extract_gravity_direction();
-
 
 	timeval tv1, tv2;
 	gettimeofday(&tv1, NULL);
