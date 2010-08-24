@@ -1,19 +1,20 @@
 #include "sph.h"
 #include <iostream>
+
 using namespace std;
 
 
-const float		core_radius = 1.1f;
-const float		gas_constant = 1000.0f;
-const float		mu = 0.1f;
-const float		rest_density = 1.2f;
-const float		point_damping = 2.0f;
-const float		sigma = 1.0f;
+const float core_radius = 1.1f;
+const float gas_constant = 1000.0f;
+const float mu = 0.1f;
+const float rest_density = 1.2f;
+const float point_damping = 2.0f;
+const float sigma = 1.0f;
 
-const float		timestep = 0.007f;
+const float timestep = 0.02f;
 
-GridElement		*grid;
-GridElement		*sleeping_grid;
+GridElement *grid;
+GridElement *sleeping_grid;
 
 
 inline float kernel(const Vector3f &r, const float h)
@@ -65,14 +66,8 @@ inline void add_density(Particle &particle, Particle &neighbour)
 
 void sum_density(GridElement &grid_element, Particle &particle)
 {
-	/* Handle the particles directly stored in the grid. */
-	Particle *neighbour = grid_element.particles;
-	for (int x = 0; x < grid_element.particle_count; x++)
-		add_density(particle, neighbour[x]);
-
-	/* Handle the particles not stored in the grid. */
-	ParticleList *plist = &grid_element.overflow_particles;
-	for (ParticleListIter piter = plist->begin(); piter != plist->end(); piter++)
+	list<Particle> *plist = &grid_element.particles;
+	for (list<Particle>::iterator piter = plist->begin(); piter != plist->end(); piter++)
 		add_density(particle, *piter);
 }
 
@@ -99,14 +94,8 @@ void update_density(int i, int j, int k)
 {
 	GridElement *grid_element = &GRID(i, j, k);
 
-	/* Handle the particles directly stored in the grid. */
-	Particle *particles = grid_element->particles;
-	for (int x = 0; x < grid_element->particle_count; x++)
-		sum_all_density(i, j, k, particles[x]);
-
-	/* Handle the particles not stored in the grid. */
-	ParticleList *plist = &grid_element->overflow_particles;
-	for (ParticleListIter piter = plist->begin(); piter != plist->end(); piter++)
+	list<Particle> *plist = &grid_element->particles;
+	for (list<Particle>::iterator piter = plist->begin(); piter != plist->end(); piter++)
 		sum_all_density(i, j, k, *piter);
 }
 
@@ -141,14 +130,8 @@ inline void add_forces(Particle &particle, Particle &neighbour)
 
 void sum_forces(GridElement &grid_element, Particle &particle)
 {
-	/* Handle the particles directly stored in the grid. */
-	Particle *neighbour = grid_element.particles;
-	for (int x = 0; x < grid_element.particle_count; x++)
-		add_forces(particle, neighbour[x]);
-
-	/* Handle the particles not stored in the grid. */
-	ParticleList *plist = &grid_element.overflow_particles;
-	for (ParticleListIter piter = plist->begin(); piter != plist->end(); piter++)
+	list<Particle> *plist = &grid_element.particles;
+	for (list<Particle>::iterator piter = plist->begin(); piter != plist->end(); piter++)
 		add_forces(particle, *piter);
 }
 
@@ -178,15 +161,8 @@ void sum_all_forces(int i, int j, int k, Particle &particle)
 void update_forces(int i, int j, int k)
 {
 	GridElement *grid_element = &GRID(i, j, k);
-
-	/* Handle the particles directly stored in the grid. */
-	Particle *particles = grid_element->particles;
-	for (int x = 0; x < grid_element->particle_count; x++)
-		sum_all_forces(i, j, k, particles[x]);
-
-	/* Handle the particles not stored in the grid. */
-	ParticleList *plist = &grid_element->overflow_particles;
-	for (ParticleListIter piter = plist->begin(); piter != plist->end(); piter++)
+	list<Particle> *plist = &grid_element->particles;
+	for (list<Particle>::iterator piter = plist->begin(); piter != plist->end(); piter++)
 		sum_all_forces(i, j, k, *piter);
 }
 
@@ -215,17 +191,8 @@ void update_particles(int i, int j, int k)
 {
 	GridElement *grid_element = &GRID(i, j, k);
 
-	/* Handle the particles directly stored in the grid. */
-	Particle *particles = grid_element->particles;
-	for (int x = 0; x < grid_element->particle_count; x++)
-	{
-		update_velocity(particles[x]);
-		update_position(particles[x]);
-	}
-
-	/* Handle the particles not stored in the grid. */
-	ParticleList *plist = &grid_element->overflow_particles;
-	for (ParticleListIter piter = plist->begin(); piter != plist->end(); piter++)
+	list<Particle> *plist = &grid_element->particles;
+	for (list<Particle>::iterator piter = plist->begin(); piter != plist->end(); piter++)
 	{
 		update_velocity(*piter);
 		update_position(*piter);
@@ -236,14 +203,8 @@ inline void insert_into_grid(int i, int j, int k)
 {
 	GridElement *grid_element = &GRID(i, j, k);
 
-	/* Handle the particles directly stored in the grid. */
-	Particle *particles = grid_element->particles;
-	for (int x = 0; x < grid_element->particle_count; x++)
-		ADD_TO_GRID(sleeping_grid, particles[x]);
-
-	/* Handle the particles not stored in the grid. */
-	ParticleList *plist = &grid_element->overflow_particles;
-	for (ParticleListIter piter = plist->begin(); piter != plist->end(); piter++)
+	list<Particle> *plist = &grid_element->particles;
+	for (list<Particle>::iterator piter = plist->begin(); piter != plist->end(); piter++)
 		ADD_TO_GRID(sleeping_grid, *piter);
 }
 
@@ -254,8 +215,7 @@ void update_grid()
 			for (int k = 0; k < GRID_DEPTH; k++)
 			{
 				insert_into_grid(i, j, k);
-				GRID(i, j, k).particle_count = 0;
-				GRID(i, j, k).overflow_particles.clear();
+				GRID(i, j, k).particles.clear();
 			}
 
 	/* Swap the grids. */
