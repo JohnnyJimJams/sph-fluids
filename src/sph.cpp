@@ -111,13 +111,11 @@ inline void add_forces(Particle &particle, Particle &neighbour)
 	                                + (neighbour.density - rest_density))
 	         * gradient_pressure_kernel(r, core_radius);
 	particle.force  += -neighbour.mass / neighbour.density * common;
-	particle.p_force  += -neighbour.mass / neighbour.density * common;
 
 	/* Compute the viscosity force. */
 	common = mu * (neighbour.velocity - particle.velocity)
 	         * laplacian_viscosity_kernel(r, core_radius);
 	particle.force  += neighbour.mass / neighbour.density * common;
-	particle.v_force  += neighbour.mass / neighbour.density * common;
 
 	/* Compute the gradient of the color field. */
 	common = gradient_kernel(r, core_radius);
@@ -138,8 +136,6 @@ void sum_forces(GridElement &grid_element, Particle &particle)
 void sum_all_forces(int i, int j, int k, Particle &particle)
 {
 	particle.force = Vector3f(0.0f, 0.0f, 0.0f);
-	particle.p_force = Vector3f(0.0f, 0.0f, 0.0f);
-	particle.v_force = Vector3f(0.0f, 0.0f, 0.0f);
 	particle.color_gradient = Vector3f(0.0f, 0.0f, 0.0f);
 	particle.color_laplacian = 0.0f;
 
@@ -172,8 +168,6 @@ inline void update_velocity(Particle &particle)
 	{
 		particle.force +=   -sigma * particle.color_laplacian
 		                  * normalize(particle.color_gradient);
-		particle.t_force +=   -sigma * particle.color_laplacian
-		                    * normalize(particle.color_gradient);
 	}
 
 	Vector3f acceleration =   particle.force / particle.density

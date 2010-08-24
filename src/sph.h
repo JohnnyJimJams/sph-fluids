@@ -18,9 +18,9 @@ struct GridElement;
 #define POW6(x)					(CUBE(x) * CUBE(x))
 #define POW9(x)					(POW6(x) * CUBE(x))
 
-#define GRID_WIDTH				20
-#define GRID_HEIGHT				20
-#define GRID_DEPTH				20
+#define GRID_WIDTH				100
+#define GRID_HEIGHT				100
+#define GRID_DEPTH				100
 
 #define GRID_POINT(g,i,j,k)		g                                   \
 								[                                   \
@@ -50,8 +50,6 @@ struct Particle
 	Vector3f force;
 	Vector3f color_gradient;
 	float color_laplacian;
-
-	Vector3f p_force, v_force, t_force;
 
 	Particle() { mass = 1.0f; }
 };
