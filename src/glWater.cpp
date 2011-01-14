@@ -120,15 +120,15 @@ void handle_particle_collision_cube(Particle &particle)
 	float &vz = particle.velocity.z;
 
 	if (px < 0 || px > WIDTH) {
-		px = std::min(std::max(px, 0.0f), (float) WIDTH);
+		px = min(max(px, 0.0f), (float) WIDTH);
 		vx *= -1.0f;
 	}
 	if (py < 0 || py > HEIGHT) {
-		py = std::min(std::max(py, 0.0f), (float) HEIGHT);
+		py = min(max(py, 0.0f), (float) HEIGHT);
 		vy *= -1.0f;
 	}
 	if (pz < 0 || pz > DEPTH) {
-		pz = std::min(std::max(pz, 0.0f), (float) DEPTH);
+		pz = min(max(pz, 0.0f), (float) DEPTH);
 		vz *= -1.0f;
 	}
 }
