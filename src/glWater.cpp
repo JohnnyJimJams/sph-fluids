@@ -58,15 +58,17 @@ void draw_particle(Particle &particle)
 {
 	glTranslatef(+particle.position.x, +particle.position.y, +particle.position.z);
 	glutSolidSphere(0.3, 12, 12);
+#if 0
 	glDisable(GL_LIGHTING);
-/* 	glBegin(GL_LINES);
- * 		glColor3ub(0, 0, 255);
- * 		glVertex3f(0.0f, 0.0f, 0.0f);
- * 		glColor3ub(255, 0, 0);
- * 		pos = normalize(particle.force);
- * 		glVertex3fv((GLfloat *)&pos);
- * 	glEnd(); */
+	glBegin(GL_LINES);
+	glColor3ub(0, 0, 255);
+	glVertex3f(0.0f, 0.0f, 0.0f);
+	glColor3ub(255, 0, 0);
+	pos = normalize(particle.force);
+	glVertex3fv((GLfloat *)&pos);
+	glEnd();
 	glEnable(GL_LIGHTING);
+#endif
 	glTranslatef(-particle.position.x, -particle.position.y, -particle.position.z);
 }
 
