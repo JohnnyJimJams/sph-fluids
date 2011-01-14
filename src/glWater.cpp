@@ -7,9 +7,9 @@
 
 using namespace std;
 
-#define WIDTH		10
+#define WIDTH		15
 #define HEIGHT		15
-#define DEPTH		10
+#define DEPTH		15
 
 
 int wndWidth = 700, wndHeight = 700;
@@ -26,36 +26,38 @@ Vector3f gravity_direction;
 extern void init_particles(Particle *particles, int count);
 extern void update(void(*inter_hook)() = NULL, void(*post_hook)() = NULL);
 
-const int particle_count = 400;
+const int particle_count = 1000;
 
 
 void init_liquid()
-{
+ {
 	Particle *particles = new Particle[particle_count];
 
 	int count = particle_count;
 	Particle *particle_iter = particles;
-	for (int j = 0; j < HEIGHT; j++)
-		for (int k = 0; k < DEPTH; k++)
-			for (int i = 0; i < WIDTH / 2; i++)
-			{
-				if (count-- == 0)
-				{
-					init_particles(particles, particle_count);
-					return;
-				}
+	while (true) {
+		for (int j = 0; j < HEIGHT; j++) {
+			for (int k = 0; k < DEPTH; k++) {
+				for (int i = 0; i < WIDTH; i++) {
+					if (count-- == 0) {
+						init_particles(particles, particle_count);
+						return;
+					}
 
-				particle_iter->position.x = i;
-				particle_iter->position.y = j;
-				particle_iter->position.z = k;
-				particle_iter++;
+					particle_iter->position.x = i;
+					particle_iter->position.y = j;
+					particle_iter->position.z = k;
+					particle_iter++;
+				}
 			}
+		}
+	}
 }
 
 void draw_particle(Particle &particle)
 {
 	glTranslatef(+particle.position.x, +particle.position.y, +particle.position.z);
-	glutSolidSphere(0.5, 20, 20);
+	glutSolidSphere(0.3, 12, 12);
 	glDisable(GL_LIGHTING);
 /* 	glBegin(GL_LINES);
  * 		glColor3ub(0, 0, 255);
@@ -78,7 +80,7 @@ void add_global_forces()
 	foreach_particle(add_gravity_force);
 }
 
-void handle_particle_collision(Particle &particle)
+void handle_particle_collision_cylinder(Particle &particle)
 {
 	Vector3f mid = Vector3f(WIDTH, 0.0f, DEPTH) / 2.0f;
 	Vector3f distance = Vector3f(particle.position.x, 0.0f, particle.position.z) - mid;
@@ -105,9 +107,37 @@ void handle_particle_collision(Particle &particle)
 	}
 }
 
+void handle_particle_collision_cube(Particle &particle)
+{
+	float &px = particle.position.x;
+	float &py = particle.position.y;
+	float &pz = particle.position.z;
+
+	float &vx = particle.velocity.x;
+	float &vy = particle.velocity.y;
+	float &vz = particle.velocity.z;
+
+	if (px < 0 || px > WIDTH) {
+		px = std::min(std::max(px, 0.0f), (float) WIDTH);
+		vx *= -1.0f;
+	}
+	if (py < 0 || py > HEIGHT) {
+		py = std::min(std::max(py, 0.0f), (float) HEIGHT);
+		vy *= -1.0f;
+	}
+	if (pz < 0 || pz > DEPTH) {
+		pz = std::min(std::max(pz, 0.0f), (float) DEPTH);
+		vz *= -1.0f;
+	}
+}
+
 void handle_collisions()
 {
-	foreach_particle(handle_particle_collision);
+#if 0
+	foreach_particle(handle_particle_collision_cylinder);
+#else
+	foreach_particle(handle_particle_collision_cube);
+#endif
 }
 
 void extract_gravity_direction()
@@ -238,11 +268,14 @@ void display()
 	update(add_global_forces, handle_collisions);
 
 	gettimeofday(&tv2, NULL);
+	int simulationTime = 1000 * (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec) / 1000;
 
-	int elapsed = 1000000 * (tv2.tv_sec - tv1.tv_sec) + tv2.tv_usec - tv1.tv_usec;
-	printf("%7d microseconds\n", elapsed);
-
+	gettimeofday(&tv1, NULL);
 	foreach_particle(draw_particle);
+	gettimeofday(&tv2, NULL);
+	int renderingTime = 1000 * (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec) / 1000;
+
+	printf("time: %d/%d ms\n", simulationTime, renderingTime);
 
 	glutSwapBuffers();
 
