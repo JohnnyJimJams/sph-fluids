@@ -19,32 +19,20 @@ GridElement *sleeping_grid;
 
 
 inline float kernel(const Vector3f &r, const float h) {
-	if (length(r) > h) {
-		return 0.0f;
-	}
-
 	return 315.0f / (64.0f * PI_FLOAT * POW9(h)) * CUBE(SQR(h) - dot(r, r));
 }
 
 inline Vector3f gradient_kernel(const Vector3f &r, const float h) {
-	if (length(r) > h) {
-		return Vector3f(0.0f, 0.0f, 0.0f);
-	}
-
 	return -945.0f / (32.0f * PI_FLOAT * POW9(h)) * SQR(SQR(h) - dot(r, r)) * r;
 }
 
 inline float laplacian_kernel(const Vector3f &r, const float h){
-	if (length(r) > h) {
-		return 0.0f;
-	}
-
 	return   945.0f / (32.0f * PI_FLOAT * POW9(h))
 	       * (SQR(h) - dot(r, r)) * (7.0f * dot(r, r) - 3.0f * SQR(h));
 }
 
 inline Vector3f gradient_pressure_kernel(const Vector3f &r, const float h) {
-	if ((length(r) > h) || (length(r) < 0.001f)) {
+	if (dot(r, r) < SQR(0.001f)) {
 		return Vector3f(0.0f, 0.0f, 0.0f);
 	}
 
@@ -52,15 +40,15 @@ inline Vector3f gradient_pressure_kernel(const Vector3f &r, const float h) {
 }
 
 inline float laplacian_viscosity_kernel(const Vector3f &r, const float h) {
-	if (length(r) > h) {
-		return 0.0f;
-	}
-
 	return 45.0f / (PI_FLOAT * POW6(h)) * (h - length(r));
 }
 
 inline void add_density(Particle &particle, Particle &neighbour) {
 	Vector3f r = particle.position - neighbour.position;
+	if (dot(r, r) > SQR(core_radius)) {
+		return;
+	}
+
 	particle.density += neighbour.mass * kernel(r, core_radius);
 }
 
@@ -104,6 +92,9 @@ inline void add_forces(Particle &particle, Particle &neighbour) {
 	}
 
 	Vector3f r = particle.position - neighbour.position;
+	if (dot(r, r) > SQR(core_radius)) {
+		return;
+	}
 
 	/* Compute the pressure force. */
 	Vector3f common = 0.5f * gas_constant * (  (particle.density - rest_density)
