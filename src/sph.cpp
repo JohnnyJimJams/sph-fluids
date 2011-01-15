@@ -1,4 +1,6 @@
 #include "sph.h"
+#include <sys/time.h>
+#include <cstdio>
 
 #include <iostream>
 
@@ -202,6 +204,10 @@ void update_grid() {
 }
 
 void update_densities() {
+	timeval tv1, tv2;
+
+	gettimeofday(&tv1, NULL);
+
 #if OPEN_MP
 	#pragma omp parallel for
 #endif
@@ -212,9 +218,17 @@ void update_densities() {
 			}
 		}
 	}
+
+	gettimeofday(&tv2, NULL);
+	int time = 1000 * (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec) / 1000;
+	printf("TIME[update_densities]: %dms\n", time);
 }
 
 void update_forces() {
+	timeval tv1, tv2;
+
+	gettimeofday(&tv1, NULL);
+
 #if OPEN_MP
 	#pragma omp parallel for
 #endif
@@ -225,9 +239,17 @@ void update_forces() {
 			}
 		}
 	}
+
+	gettimeofday(&tv2, NULL);
+	int time = 1000 * (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec) / 1000;
+	printf("TIME[update_forces]   : %dms\n", time);
 }
 
 void update_particles() {
+	timeval tv1, tv2;
+
+	gettimeofday(&tv1, NULL);
+
 #if OPEN_MP
 	#pragma omp parallel for
 #endif
@@ -238,6 +260,10 @@ void update_particles() {
 			}
 		}
 	}
+
+	gettimeofday(&tv2, NULL);
+	int time = 1000 * (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec) / 1000;
+	printf("TIME[update_particles]: %dms\n", time);
 }
 
 void update(void(*inter_hook)() = NULL, void(*post_hook)() = NULL) {

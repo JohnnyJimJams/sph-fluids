@@ -271,13 +271,14 @@ void display()
 
 	gettimeofday(&tv2, NULL);
 	int simulationTime = 1000 * (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec) / 1000;
+	printf("TIME[simulation]      : %d ms\n", simulationTime);
 
 	gettimeofday(&tv1, NULL);
 	foreach_particle(draw_particle);
 	gettimeofday(&tv2, NULL);
 	int renderingTime = 1000 * (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec) / 1000;
-
-	printf("time: %d/%d ms\n", simulationTime, renderingTime);
+	printf("TIME[rendering]       : %d ms\n", renderingTime);
+	printf("\n");
 
 	glutSwapBuffers();
 
