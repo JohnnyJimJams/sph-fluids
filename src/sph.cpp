@@ -48,7 +48,7 @@ inline Vector3f gradient_pressure_kernel(const Vector3f &r, const float h) {
 		return Vector3f(0.0f, 0.0f, 0.0f);
 	}
 
-	return (-45.0f / (PI_FLOAT * POW6(h)) * SQR(h - length(r)) * normalize(r));
+	return -45.0f / (PI_FLOAT * POW6(h)) * SQR(h - length(r)) * normalize(r);
 }
 
 inline float laplacian_viscosity_kernel(const Vector3f &r, const float h) {
@@ -56,7 +56,7 @@ inline float laplacian_viscosity_kernel(const Vector3f &r, const float h) {
 		return 0.0f;
 	}
 
-	return (45.0f / (PI_FLOAT * POW6(h)) * (h - length(r)));
+	return 45.0f / (PI_FLOAT * POW6(h)) * (h - length(r));
 }
 
 inline void add_density(Particle &particle, Particle &neighbour) {
