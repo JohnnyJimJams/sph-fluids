@@ -18,6 +18,8 @@ int oldX, oldY, rotX = 0, rotY = 0, zoomZ = 0;
 int oldTransX, oldTransY, transX = 0, transY = 0;
 bool zoom, trans;
 
+int simulationSteps = 2;
+
 GLfloat rotation_matrix[16];
 
 Vector3f gravity_direction;
@@ -26,7 +28,7 @@ Vector3f gravity_direction;
 extern void init_particles(Particle *particles, int count);
 extern void update(void(*inter_hook)() = NULL, void(*post_hook)() = NULL);
 
-const int particle_count = 1000;
+const int particle_count = 2000;
 
 
 void init_liquid()
@@ -267,7 +269,9 @@ void display()
 	timeval tv1, tv2;
 	gettimeofday(&tv1, NULL);
 
-	update(add_global_forces, handle_collisions);
+	for (int i = 0; i < simulationSteps; ++i) {
+		update(add_global_forces, handle_collisions);
+	}
 
 	gettimeofday(&tv2, NULL);
 	int simulationTime = 1000 * (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec) / 1000;

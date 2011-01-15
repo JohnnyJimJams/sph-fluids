@@ -15,7 +15,7 @@ const float rest_density = 1.2f;
 const float point_damping = 2.0f;
 const float sigma = 1.0f;
 
-const float timestep = 0.02f;
+const float timestep = 0.01f;
 
 GridElement *grid;
 GridElement *sleeping_grid;
