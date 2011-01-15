@@ -41,8 +41,7 @@ struct GridElement;
 								} while (0)
 
 
-struct Particle
-{
+struct Particle {
 	float mass;
 	float density;
 	Vector3f position;
@@ -54,25 +53,25 @@ struct Particle
 	Particle() { mass = 1.0f; }
 };
 
-struct GridElement
-{
+struct GridElement {
 	list<Particle> particles;
 };
 
 extern GridElement *grid;
 template <typename Function>
-void foreach_particle(Function function)
-{
-	for (int i = 0; i < GRID_WIDTH; i++)
-		for (int j = 0; j < GRID_HEIGHT; j++)
-			for (int k = 0; k < GRID_DEPTH; k++)
-			{
+void foreach_particle(Function function) {
+	for (int k = 0; k < GRID_DEPTH; k++) {
+		for (int j = 0; j < GRID_HEIGHT; j++) {
+			for (int i = 0; i < GRID_WIDTH; i++) {
 				GridElement *grid_element = &GRID(i, j, k);
 
 				list<Particle> *plist = &grid_element->particles;
-				for (list<Particle>::iterator piter = plist->begin(); piter != plist->end(); piter++)
+				for (list<Particle>::iterator piter = plist->begin(); piter != plist->end(); piter++) {
 					function(*piter);
+				}
 			}
+		}
+	}
 }
 
 #endif /* _SPH_H_ */

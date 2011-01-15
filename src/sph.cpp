@@ -65,9 +65,9 @@ void sum_density(GridElement &grid_element, Particle &particle) {
 inline void sum_all_density(int i, int j, int k, Particle &particle) {
 	particle.density = 0.0f;
 
-	for (int x = i - 1; x <= i + 1; x++) {
+	for (int z = k - 1; z <= k + 1; z++) {
 		for (int y = j - 1; y <= j + 1; y++) {
-			for (int z = k - 1; z <= k + 1; z++) {
+			for (int x = i - 1; x <= i + 1; x++) {
 				if (   (x < 0) || (x >= GRID_WIDTH)
 					|| (y < 0) || (y >= GRID_HEIGHT)
 					|| (z < 0) || (z >= GRID_DEPTH)) {
@@ -131,9 +131,9 @@ void sum_all_forces(int i, int j, int k, Particle &particle) {
 	particle.color_gradient = Vector3f(0.0f, 0.0f, 0.0f);
 	particle.color_laplacian = 0.0f;
 
-	for (int x = i - 1; x <= i + 1; x++) {
+	for (int z = k - 1; z <= k + 1; z++) {
 		for (int y = j - 1; y <= j + 1; y++) {
-			for (int z = k - 1; z <= k + 1; z++) {
+			for (int x = i - 1; x <= i + 1; x++) {
 				if (   (x < 0) || (x >= GRID_WIDTH)
 					|| (y < 0) || (y >= GRID_HEIGHT)
 					|| (z < 0) || (z >= GRID_DEPTH)) {
@@ -190,9 +190,9 @@ inline void insert_into_grid(int i, int j, int k) {
 }
 
 void update_grid() {
-	for (int i = 0; i < GRID_WIDTH; i++) {
+	for (int k = 0; k < GRID_DEPTH; k++) {
 		for (int j = 0; j < GRID_HEIGHT; j++) {
-			for (int k = 0; k < GRID_DEPTH; k++) {
+			for (int i = 0; i < GRID_WIDTH; i++) {
 				insert_into_grid(i, j, k);
 				GRID(i, j, k).particles.clear();
 			}
@@ -211,9 +211,9 @@ void update_densities() {
 #if OPEN_MP
 	#pragma omp parallel for
 #endif
-    for (int i = 0; i < GRID_WIDTH; i++) {
+	for (int k = 0; k < GRID_DEPTH; k++) {
 		for (int j = 0; j < GRID_HEIGHT; j++) {
-			for (int k = 0; k < GRID_DEPTH; k++) {
+			for (int i = 0; i < GRID_WIDTH; i++) {
 				update_densities(i, j, k);
 			}
 		}
@@ -232,9 +232,9 @@ void update_forces() {
 #if OPEN_MP
 	#pragma omp parallel for
 #endif
-    for (int i = 0; i < GRID_WIDTH; i++) {
+	for (int k = 0; k < GRID_DEPTH; k++) {
 		for (int j = 0; j < GRID_HEIGHT; j++) {
-			for (int k = 0; k < GRID_DEPTH; k++) {
+			for (int i = 0; i < GRID_WIDTH; i++) {
 				update_forces(i, j, k);
 			}
 		}
@@ -253,9 +253,9 @@ void update_particles() {
 #if OPEN_MP
 	#pragma omp parallel for
 #endif
-    for (int i = 0; i < GRID_WIDTH; i++) {
+	for (int k = 0; k < GRID_DEPTH; k++) {
 		for (int j = 0; j < GRID_HEIGHT; j++) {
-			for (int k = 0; k < GRID_DEPTH; k++) {
+			for (int i = 0; i < GRID_WIDTH; i++) {
 				update_particles(i, j, k);
 			}
 		}
