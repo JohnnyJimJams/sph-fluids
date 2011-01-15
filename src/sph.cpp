@@ -129,7 +129,7 @@ inline void add_forces(Particle &particle, Particle &neighbour)
 
 void sum_forces(GridElement &grid_element, Particle &particle)
 {
-	list<Particle>  &plist =grid_element.particles;
+	list<Particle>  &plist = grid_element.particles;
 	for (list<Particle>::iterator piter = plist.begin(); piter != plist.end(); piter++)
 		add_forces(particle, *piter);
 }
