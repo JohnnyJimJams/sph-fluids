@@ -312,7 +312,7 @@ int main(int argc, char *argv[])
 	glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
 	glutInitWindowSize(wndWidth, wndHeight);
 	glutInitWindowPosition(0, 0);
-	glutCreateWindow("glWater");
+	glutCreateWindow("SPH Fluids");
 
 	glutReshapeFunc(reshape);
 	glutMouseFunc(mouse);

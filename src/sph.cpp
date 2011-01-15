@@ -36,7 +36,7 @@ inline float laplacian_kernel(const Vector3f &r, const float h) {
 
 inline Vector3f gradient_pressure_kernel(const Vector3f &r, const float h) {
 	if (dot(r, r) < SQR(0.001f)) {
-		return Vector3f(0.0f, 0.0f, 0.0f);
+		return Vector3f(0.0f);
 	}
 
 	return -45.0f / (PI_FLOAT * POW6(h)) * SQR(h - length(r)) * normalize(r);
@@ -127,8 +127,8 @@ void sum_forces(GridElement &grid_element, Particle &particle) {
 }
 
 void sum_all_forces(int i, int j, int k, Particle &particle) {
-	particle.force = Vector3f(0.0f, 0.0f, 0.0f);
-	particle.color_gradient = Vector3f(0.0f, 0.0f, 0.0f);
+	particle.force = Vector3f(0.0f);
+	particle.color_gradient = Vector3f(0.0f);
 	particle.color_laplacian = 0.0f;
 
 	for (int z = k - 1; z <= k + 1; z++) {
@@ -154,7 +154,7 @@ void update_forces(int i, int j, int k) {
 	}
 }
 
-inline void update_velocity(Particle &particle) {
+inline void update_particle(Particle &particle) {
 	if (length(particle.color_gradient) > 0.001f) {
 		particle.force +=   -sigma * particle.color_laplacian
 		                  * normalize(particle.color_gradient);
@@ -162,11 +162,8 @@ inline void update_velocity(Particle &particle) {
 
 	Vector3f acceleration =   particle.force / particle.density
 	               - point_damping * particle.velocity / particle.mass;
-
 	particle.velocity += timestep * acceleration;
-}
 
-inline void update_position(Particle &particle) {
 	particle.position += timestep * particle.velocity;
 }
 
@@ -175,8 +172,7 @@ void update_particles(int i, int j, int k) {
 
 	list<Particle> &plist = grid_element.particles;
 	for (list<Particle>::iterator piter = plist.begin(); piter != plist.end(); piter++) {
-		update_velocity(*piter);
-		update_position(*piter);
+		update_particle(*piter);
 	}
 }
 
