@@ -4,6 +4,7 @@
 
 using namespace std;
 
+#define OPEN_MP 0
 
 const float core_radius = 1.1f;
 const float gas_constant = 1000.0f;
@@ -26,7 +27,7 @@ inline Vector3f gradient_kernel(const Vector3f &r, const float h) {
 	return -945.0f / (32.0f * PI_FLOAT * POW9(h)) * SQR(SQR(h) - dot(r, r)) * r;
 }
 
-inline float laplacian_kernel(const Vector3f &r, const float h){
+inline float laplacian_kernel(const Vector3f &r, const float h) {
 	return   945.0f / (32.0f * PI_FLOAT * POW9(h))
 	       * (SQR(h) - dot(r, r)) * (7.0f * dot(r, r) - 3.0f * SQR(h));
 }
@@ -201,6 +202,9 @@ void update_grid() {
 }
 
 void update_densities() {
+#if OPEN_MP
+	#pragma omp parallel for
+#endif
     for (int i = 0; i < GRID_WIDTH; i++) {
 		for (int j = 0; j < GRID_HEIGHT; j++) {
 			for (int k = 0; k < GRID_DEPTH; k++) {
@@ -211,6 +215,9 @@ void update_densities() {
 }
 
 void update_forces() {
+#if OPEN_MP
+	#pragma omp parallel for
+#endif
     for (int i = 0; i < GRID_WIDTH; i++) {
 		for (int j = 0; j < GRID_HEIGHT; j++) {
 			for (int k = 0; k < GRID_DEPTH; k++) {
@@ -221,6 +228,9 @@ void update_forces() {
 }
 
 void update_particles() {
+#if OPEN_MP
+	#pragma omp parallel for
+#endif
     for (int i = 0; i < GRID_WIDTH; i++) {
 		for (int j = 0; j < GRID_HEIGHT; j++) {
 			for (int k = 0; k < GRID_DEPTH; k++) {
