@@ -30,7 +30,7 @@ Vector3f gravity_direction;
 extern void init_particles(Particle *particles, int count);
 extern void update(void(*inter_hook)() = NULL, void(*post_hook)() = NULL);
 
-const int particle_count = 50000;
+const int particle_count = 2000;
 
 
 void init_liquid()
