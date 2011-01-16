@@ -20,11 +20,11 @@ bool zoom, trans;
 
 GLuint sphereId;
 
-int simulationSteps = 2;
-
 GLfloat rotation_matrix[16];
-
 Vector3f gravity_direction;
+
+int simulationSteps = 2;
+float collisionRestitution = 1.0f;
 
 
 extern void init_particles(Particle *particles, int count);
@@ -104,12 +104,12 @@ void handle_particle_collision_cylinder(Particle &particle)
 	if (particle.position.y >= HEIGHT - 1)
 	{
 		particle.position.y = HEIGHT - 1;
-		particle.velocity.y *= -1.0f;
+		particle.velocity.y *= -collisionRestitution;
 	}
 	else if (particle.position.y < 0.0f)
 	{
 		particle.position.y = 0.0f;
-		particle.velocity.y *= -1.0f;
+		particle.velocity.y *= -collisionRestitution;
 	}
 }
 
@@ -125,15 +125,15 @@ void handle_particle_collision_cube(Particle &particle)
 
 	if (px < 0 || px > WIDTH) {
 		px = min(max(px, 0.0f), (float) WIDTH);
-		vx *= -1.0f;
+		vx *= -collisionRestitution;
 	}
 	if (py < 0 || py > HEIGHT) {
 		py = min(max(py, 0.0f), (float) HEIGHT);
-		vy *= -1.0f;
+		vy *= -collisionRestitution;
 	}
 	if (pz < 0 || pz > DEPTH) {
 		pz = min(max(pz, 0.0f), (float) DEPTH);
-		vz *= -1.0f;
+		vz *= -collisionRestitution;
 	}
 }
 
