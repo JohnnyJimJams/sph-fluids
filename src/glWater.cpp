@@ -7,9 +7,9 @@
 
 using namespace std;
 
-#define WIDTH		15
+#define WIDTH		20
 #define HEIGHT		15
-#define DEPTH		15
+#define DEPTH		20
 
 
 int wndWidth = 700, wndHeight = 700;
@@ -175,7 +175,7 @@ void reshape(int width, int height)
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	//glOrtho(-0.1 * WIDTH, 1.1 * WIDTH, +0.1 * HEIGHT, -1.1 * HEIGHT, 1.0, 1000.0);
-	gluPerspective(45.0, 1.0, 1.0, 1000.0);
+	gluPerspective(55.0, 1.0, 1.0, 1000.0);
 
 	wndWidth = width;
 	wndHeight = height;

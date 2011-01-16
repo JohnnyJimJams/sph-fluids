@@ -18,9 +18,9 @@ struct GridElement;
 #define POW6(x)					(CUBE(x) * CUBE(x))
 #define POW9(x)					(POW6(x) * CUBE(x))
 
-#define GRID_WIDTH				20
-#define GRID_HEIGHT				20
-#define GRID_DEPTH				20
+#define GRID_WIDTH				32
+#define GRID_HEIGHT				32
+#define GRID_DEPTH				32
 
 #define GRID_POINT(g,i,j,k)		g                                   \
 								[                                   \
