@@ -47,12 +47,18 @@ inline float laplacian_viscosity_kernel(const Vector3f &r, const float h) {
 }
 
 inline void add_density(Particle &particle, Particle &neighbour) {
+	if (particle.id > neighbour.id) {
+		return;
+	}
+
 	Vector3f r = particle.position - neighbour.position;
 	if (dot(r, r) > SQR(core_radius)) {
 		return;
 	}
 
-	particle.density += neighbour.mass * kernel(r, core_radius);
+    float common = kernel(r, core_radius);
+    particle.density += neighbour.mass * common;
+	neighbour.density += particle.mass * common;
 }
 
 void sum_density(GridElement &grid_element, Particle &particle) {
@@ -63,8 +69,6 @@ void sum_density(GridElement &grid_element, Particle &particle) {
 }
 
 inline void sum_all_density(int i, int j, int k, Particle &particle) {
-	particle.density = 0.0f;
-
 	for (int z = k - 1; z <= k + 1; z++) {
 		for (int y = j - 1; y <= j + 1; y++) {
 			for (int x = i - 1; x <= i + 1; x++) {
@@ -90,7 +94,7 @@ void update_densities(int i, int j, int k) {
 }
 
 inline void add_forces(Particle &particle, Particle &neighbour) {
-	if (&particle == &neighbour) {
+	if (particle.id >= neighbour.id) {
 		return;
 	}
 
@@ -104,19 +108,23 @@ inline void add_forces(Particle &particle, Particle &neighbour) {
 	                                + (neighbour.density - rest_density))
 	         * gradient_pressure_kernel(r, core_radius);
 	particle.force += -neighbour.mass / neighbour.density * common;
+	neighbour.force -= -particle.mass / particle.density * common;
 
 	/* Compute the viscosity force. */
 	common = mu * (neighbour.velocity - particle.velocity)
 	         * laplacian_viscosity_kernel(r, core_radius);
 	particle.force += neighbour.mass / neighbour.density * common;
+	neighbour.force -= particle.mass / particle.density * common;
 
 	/* Compute the gradient of the color field. */
 	common = gradient_kernel(r, core_radius);
 	particle.color_gradient += neighbour.mass / neighbour.density * common;
+	neighbour.color_gradient -= particle.mass / particle.density * common;
 
 	/* Compute the gradient of the color field. */
 	float value = laplacian_kernel(r, core_radius);
 	particle.color_laplacian += neighbour.mass / neighbour.density * value;
+	neighbour.color_laplacian += particle.mass / particle.density * value;
 }
 
 void sum_forces(GridElement &grid_element, Particle &particle) {
@@ -127,10 +135,6 @@ void sum_forces(GridElement &grid_element, Particle &particle) {
 }
 
 void sum_all_forces(int i, int j, int k, Particle &particle) {
-	particle.force = Vector3f(0.0f);
-	particle.color_gradient = Vector3f(0.0f);
-	particle.color_laplacian = 0.0f;
-
 	for (int z = k - 1; z <= k + 1; z++) {
 		for (int y = j - 1; y <= j + 1; y++) {
 			for (int x = i - 1; x <= i + 1; x++) {
@@ -173,6 +177,28 @@ void update_particles(int i, int j, int k) {
 	list<Particle> &plist = grid_element.particles;
 	for (list<Particle>::iterator piter = plist.begin(); piter != plist.end(); piter++) {
 		update_particle(*piter);
+	}
+}
+
+inline void reset_particle(Particle &particle) {
+	particle.density = 0.0f;
+	particle.force = Vector3f(0.0f);
+	particle.color_gradient = Vector3f(0.0f);
+	particle.color_laplacian = 0.0f;
+}
+
+void reset_particles() {
+	for (int k = 0; k < GRID_DEPTH; k++) {
+		for (int j = 0; j < GRID_HEIGHT; j++) {
+			for (int i = 0; i < GRID_WIDTH; i++) {
+				GridElement &grid_element = GRID(i, j, k);
+
+				list<Particle> &plist = grid_element.particles;
+				for (list<Particle>::iterator piter = plist.begin(); piter != plist.end(); piter++) {
+					reset_particle(*piter);
+				}
+			}
+		}
 	}
 }
 
@@ -263,6 +289,8 @@ void update_particles() {
 }
 
 void update(void(*inter_hook)() = NULL, void(*post_hook)() = NULL) {
+	reset_particles();
+
     update_densities();
     update_forces();
 
@@ -286,6 +314,7 @@ void init_particles(Particle *particles, int count) {
 	sleeping_grid = new GridElement[GRID_WIDTH * GRID_HEIGHT * GRID_DEPTH];
 
 	for (int x = 0; x < count; x++) {
+		particles[x].id = x;
 		ADD_TO_GRID(grid, particles[x]);
 	}
 }

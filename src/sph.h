@@ -33,15 +33,16 @@ struct GridElement;
 #define SLEEPING_GRID(i,j,k)	GRID_POINT(sleeping_grid,i,j,k)
 
 #define ADD_TO_GRID(g,p)		do { \
-									int i = (int)((p).position.x / core_radius); \
-									int j = (int)((p).position.y / core_radius); \
-									int k = (int)((p).position.z / core_radius); \
+									int i = (int) ((p).position.x / core_radius); \
+									int j = (int) ((p).position.y / core_radius); \
+									int k = (int) ((p).position.z / core_radius); \
 									GridElement *gelement = &GRID_POINT(g,i,j,k); \
 									gelement->particles.push_back(p); \
 								} while (0)
 
 
 struct Particle {
+	int id;
 	float mass;
 	float density;
 	Vector3f position;
