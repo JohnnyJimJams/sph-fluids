@@ -18,6 +18,8 @@ int oldX, oldY, rotX = 0, rotY = 0, zoomZ = 0;
 int oldTransX, oldTransY, transX = 0, transY = 0;
 bool zoom, trans;
 
+GLuint sphereId;
+
 int simulationSteps = 2;
 
 GLfloat rotation_matrix[16];
@@ -28,7 +30,7 @@ Vector3f gravity_direction;
 extern void init_particles(Particle *particles, int count);
 extern void update(void(*inter_hook)() = NULL, void(*post_hook)() = NULL);
 
-const int particle_count = 2000;
+const int particle_count = 50000;
 
 
 void init_liquid()
@@ -59,7 +61,7 @@ void init_liquid()
 void draw_particle(Particle &particle)
 {
 	glTranslatef(+particle.position.x, +particle.position.y, +particle.position.z);
-	glutSolidSphere(0.3, 12, 12);
+	glCallList(sphereId);
 #if 0
 	glDisable(GL_LIGHTING);
 	glBegin(GL_LINES);
@@ -159,6 +161,11 @@ void init()
 
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
+
+	sphereId = glGenLists(1);
+	glNewList(sphereId, GL_COMPILE);
+	glutSolidSphere(0.3, 20, 20);
+	glEndList();
 }
 
 void reshape(int width, int height)
