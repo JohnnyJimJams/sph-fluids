@@ -12,14 +12,6 @@ struct GridElement;
 #include "Vector.h"
 
 
-#define PI_FLOAT				3.141592653589793f
-
-#define SQR(x)					((x) * (x))
-#define CUBE(x)					((x) * (x) * (x))
-#define POW6(x)					(CUBE(x) * CUBE(x))
-#define POW9(x)					(POW6(x) * CUBE(x))
-
-
 struct Particle {
 	int id;
 	float mass;
