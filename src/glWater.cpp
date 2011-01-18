@@ -27,14 +27,12 @@ int simulationSteps = 2;
 float collisionRestitution = 1.0f;
 
 
-extern void init_particles(Particle *particles, int count);
-extern void update(void(*inter_hook)() = NULL, void(*post_hook)() = NULL);
-
 const int particle_count = 2000;
 
+SphFluidSolver solver(1.1f, 1000.0f, 0.1f, 1.2f, 2.0f, 1.0f, 0.01f);
 
-void init_liquid()
- {
+
+void init_liquid() {
 	Particle *particles = new Particle[particle_count];
 
 	int count = particle_count;
@@ -44,7 +42,7 @@ void init_liquid()
 			for (int k = 0; k < DEPTH; k++) {
 				for (int i = 0; i < WIDTH; i++) {
 					if (count-- == 0) {
-						init_particles(particles, particle_count);
+						solver.init_particles(particles, particle_count);
 						return;
 					}
 
@@ -58,8 +56,7 @@ void init_liquid()
 	}
 }
 
-void draw_particle(Particle &particle)
-{
+void draw_particle(Particle &particle) {
 	glTranslatef(+particle.position.x, +particle.position.y, +particle.position.z);
 	glCallList(sphereId);
 #if 0
@@ -76,23 +73,19 @@ void draw_particle(Particle &particle)
 	glTranslatef(-particle.position.x, -particle.position.y, -particle.position.z);
 }
 
-void add_gravity_force(Particle &particle)
-{
+void add_gravity_force(Particle &particle) {
 	particle.force += 100.0f * gravity_direction * particle.density / particle.mass;
 }
 
-void add_global_forces()
-{
-	foreach_particle(add_gravity_force);
+void add_global_forces() {
+	solver.foreach_particle(add_gravity_force);
 }
 
-void handle_particle_collision_cylinder(Particle &particle)
-{
+void handle_particle_collision_cylinder(Particle &particle) {
 	Vector3f mid = Vector3f(WIDTH, 0.0f, DEPTH) / 2.0f;
 	Vector3f distance = Vector3f(particle.position.x, 0.0f, particle.position.z) - mid;
 
-	if (length(distance) >= WIDTH / 2)
-	{
+	if (length(distance) >= WIDTH / 2) {
 		distance = normalize(distance);
 
 		particle.position.x = (mid + WIDTH / 2 * distance).x;
@@ -101,20 +94,16 @@ void handle_particle_collision_cylinder(Particle &particle)
 		particle.velocity -= 2.0f * dot(particle.velocity, distance) * distance;
 	}
 
-	if (particle.position.y >= HEIGHT - 1)
-	{
+	if (particle.position.y >= HEIGHT - 1) {
 		particle.position.y = HEIGHT - 1;
 		particle.velocity.y *= -collisionRestitution;
-	}
-	else if (particle.position.y < 0.0f)
-	{
+	} else if (particle.position.y < 0.0f) {
 		particle.position.y = 0.0f;
 		particle.velocity.y *= -collisionRestitution;
 	}
 }
 
-void handle_particle_collision_cube(Particle &particle)
-{
+void handle_particle_collision_cube(Particle &particle) {
 	float &px = particle.position.x;
 	float &py = particle.position.y;
 	float &pz = particle.position.z;
@@ -137,24 +126,21 @@ void handle_particle_collision_cube(Particle &particle)
 	}
 }
 
-void handle_collisions()
-{
+void handle_collisions() {
 #if 0
 	foreach_particle(handle_particle_collision_cylinder);
 #else
-	foreach_particle(handle_particle_collision_cube);
+	solver.foreach_particle(handle_particle_collision_cube);
 #endif
 }
 
-void extract_gravity_direction()
-{
+void extract_gravity_direction() {
 	gravity_direction.x = -rotation_matrix[1];
 	gravity_direction.y = -rotation_matrix[5];
 	gravity_direction.z = -rotation_matrix[9];
 }
 
-void init()
-{
+void init() {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
 	glEnable(GL_DEPTH_TEST);
@@ -168,8 +154,7 @@ void init()
 	glEndList();
 }
 
-void reshape(int width, int height)
-{
+void reshape(int width, int height) {
 	glViewport(0, 0, width, height);
 
 	glMatrixMode(GL_PROJECTION);
@@ -181,57 +166,43 @@ void reshape(int width, int height)
 	wndHeight = height;
 }
 
-void mouse(int button, int state, int x, int y)
-{
-	if (button == GLUT_LEFT_BUTTON)
-	{
-		if (glutGetModifiers() & GLUT_ACTIVE_CTRL)
-		{
+void mouse(int button, int state, int x, int y) {
+	if (button == GLUT_LEFT_BUTTON) {
+		if (glutGetModifiers() & GLUT_ACTIVE_CTRL) {
 			trans = true;
 			oldTransX = x - transX;
 			oldTransY = y - transY;
-		}
-		else
-		{
+		} else {
 			trans = false;
 			oldX = x;
 			oldY = y;
 		}
-	}
-	else if (button == GLUT_RIGHT_BUTTON)
-	{
+	} else if (button == GLUT_RIGHT_BUTTON) {
 		zoom = !zoom;
 		oldY = y - zoomZ;
 	}
 }
 
-void motion(int x, int y)
-{
-	if (!zoom)
-	{
-		if (trans)
-		{
+void motion(int x, int y) {
+	if (!zoom) {
+		if (trans) {
 			transX = x - oldTransX;
 			transY = y - oldTransY;
-		}
-		else
-		{
+		} else {
 			rotY = x - oldX;
 			oldX = x;
 			rotX = y - oldY;
 			oldY = y;
 		}
-	}
-	else
+	} else {
 		zoomZ = y - oldY;
+	}
 
 	glutPostRedisplay();
 }
 
-void keyboard(unsigned char key, int x, int y)
-{
-	switch (key)
-	{
+void keyboard(unsigned char key, int x, int y) {
+	switch (key) {
 	case 'q':
 	case 'Q':
 	case 0x1bU: /* ESC */
@@ -241,8 +212,7 @@ void keyboard(unsigned char key, int x, int y)
 	}
 }
 
-void display()
-{
+void display() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glGetFloatv(GL_MODELVIEW_MATRIX, rotation_matrix);
@@ -277,7 +247,7 @@ void display()
 	gettimeofday(&tv1, NULL);
 
 	for (int i = 0; i < simulationSteps; ++i) {
-		update(add_global_forces, handle_collisions);
+		solver.update(add_global_forces, handle_collisions);
 	}
 
 	gettimeofday(&tv2, NULL);
@@ -285,7 +255,7 @@ void display()
 	printf("TIME[simulation]      : %d ms\n", simulationTime);
 
 	gettimeofday(&tv1, NULL);
-	foreach_particle(draw_particle);
+	solver.foreach_particle(draw_particle);
 	gettimeofday(&tv2, NULL);
 	int renderingTime = 1000 * (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec) / 1000;
 	printf("TIME[rendering]       : %d ms\n", renderingTime);
@@ -297,13 +267,11 @@ void display()
 	glPopMatrix();
 }
 
-void idle()
-{
+void idle() {
 	glutPostRedisplay();
 }
 
-void print_usage()
-{
+void print_usage() {
 	cout << endl;
 	cout << "KEYSTROKE       ACTION" << endl;
 	cout << "=========       ======" << endl << endl;
@@ -311,8 +279,7 @@ void print_usage()
 	cout << endl;
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	print_usage();
 
 	glutInit(&argc, argv);

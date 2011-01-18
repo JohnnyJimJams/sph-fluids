@@ -8,33 +8,21 @@ using namespace std;
 
 #define OPEN_MP 0
 
-const float core_radius = 1.1f;
-const float gas_constant = 1000.0f;
-const float mu = 0.1f;
-const float rest_density = 1.2f;
-const float point_damping = 2.0f;
-const float sigma = 1.0f;
 
-const float timestep = 0.01f;
-
-GridElement *grid;
-GridElement *sleeping_grid;
-
-
-inline float kernel(const Vector3f &r, const float h) {
+inline float SphFluidSolver::kernel(const Vector3f &r, const float h) {
 	return 315.0f / (64.0f * PI_FLOAT * POW9(h)) * CUBE(SQR(h) - dot(r, r));
 }
 
-inline Vector3f gradient_kernel(const Vector3f &r, const float h) {
+inline Vector3f SphFluidSolver::gradient_kernel(const Vector3f &r, const float h) {
 	return -945.0f / (32.0f * PI_FLOAT * POW9(h)) * SQR(SQR(h) - dot(r, r)) * r;
 }
 
-inline float laplacian_kernel(const Vector3f &r, const float h) {
+inline float SphFluidSolver::laplacian_kernel(const Vector3f &r, const float h) {
 	return   945.0f / (32.0f * PI_FLOAT * POW9(h))
 	       * (SQR(h) - dot(r, r)) * (7.0f * dot(r, r) - 3.0f * SQR(h));
 }
 
-inline Vector3f gradient_pressure_kernel(const Vector3f &r, const float h) {
+inline Vector3f SphFluidSolver::gradient_pressure_kernel(const Vector3f &r, const float h) {
 	if (dot(r, r) < SQR(0.001f)) {
 		return Vector3f(0.0f);
 	}
@@ -42,11 +30,11 @@ inline Vector3f gradient_pressure_kernel(const Vector3f &r, const float h) {
 	return -45.0f / (PI_FLOAT * POW6(h)) * SQR(h - length(r)) * normalize(r);
 }
 
-inline float laplacian_viscosity_kernel(const Vector3f &r, const float h) {
+inline float SphFluidSolver::laplacian_viscosity_kernel(const Vector3f &r, const float h) {
 	return 45.0f / (PI_FLOAT * POW6(h)) * (h - length(r));
 }
 
-inline void add_density(Particle &particle, Particle &neighbour) {
+inline void SphFluidSolver::add_density(Particle &particle, Particle &neighbour) {
 	if (particle.id > neighbour.id) {
 		return;
 	}
@@ -61,31 +49,31 @@ inline void add_density(Particle &particle, Particle &neighbour) {
 	neighbour.density += particle.mass * common;
 }
 
-void sum_density(GridElement &grid_element, Particle &particle) {
+void SphFluidSolver::sum_density(GridElement &grid_element, Particle &particle) {
 	list<Particle> &plist = grid_element.particles;
 	for (list<Particle>::iterator piter = plist.begin(); piter != plist.end(); piter++) {
 		add_density(particle, *piter);
 	}
 }
 
-inline void sum_all_density(int i, int j, int k, Particle &particle) {
+inline void SphFluidSolver::sum_all_density(int i, int j, int k, Particle &particle) {
 	for (int z = k - 1; z <= k + 1; z++) {
 		for (int y = j - 1; y <= j + 1; y++) {
 			for (int x = i - 1; x <= i + 1; x++) {
-				if (   (x < 0) || (x >= GRID_WIDTH)
-					|| (y < 0) || (y >= GRID_HEIGHT)
-					|| (z < 0) || (z >= GRID_DEPTH)) {
+				if (   (x < 0) || (x >= grid_width)
+					|| (y < 0) || (y >= grid_height)
+					|| (z < 0) || (z >= grid_depth)) {
 					continue;
 				}
 
-				sum_density(GRID(x, y, z), particle);
+				sum_density(grid(x, y, z), particle);
 			}
 		}
 	}
 }
 
-void update_densities(int i, int j, int k) {
-	GridElement &grid_element = GRID(i, j, k);
+void SphFluidSolver::update_densities(int i, int j, int k) {
+	GridElement &grid_element = grid(i, j, k);
 
 	list<Particle> &plist = grid_element.particles;
 	for (list<Particle>::iterator piter = plist.begin(); piter != plist.end(); piter++) {
@@ -93,7 +81,7 @@ void update_densities(int i, int j, int k) {
 	}
 }
 
-inline void add_forces(Particle &particle, Particle &neighbour) {
+inline void SphFluidSolver::add_forces(Particle &particle, Particle &neighbour) {
 	if (particle.id >= neighbour.id) {
 		return;
 	}
@@ -121,44 +109,44 @@ inline void add_forces(Particle &particle, Particle &neighbour) {
 	particle.color_gradient += neighbour.mass / neighbour.density * common;
 	neighbour.color_gradient -= particle.mass / particle.density * common;
 
-	/* Compute the gradient of the color field. */
+	/* Compute the laplacian of the color field. */
 	float value = laplacian_kernel(r, core_radius);
 	particle.color_laplacian += neighbour.mass / neighbour.density * value;
 	neighbour.color_laplacian += particle.mass / particle.density * value;
 }
 
-void sum_forces(GridElement &grid_element, Particle &particle) {
+void SphFluidSolver::sum_forces(GridElement &grid_element, Particle &particle) {
 	list<Particle>  &plist = grid_element.particles;
 	for (list<Particle>::iterator piter = plist.begin(); piter != plist.end(); piter++) {
 		add_forces(particle, *piter);
 	}
 }
 
-void sum_all_forces(int i, int j, int k, Particle &particle) {
+void SphFluidSolver::sum_all_forces(int i, int j, int k, Particle &particle) {
 	for (int z = k - 1; z <= k + 1; z++) {
 		for (int y = j - 1; y <= j + 1; y++) {
 			for (int x = i - 1; x <= i + 1; x++) {
-				if (   (x < 0) || (x >= GRID_WIDTH)
-					|| (y < 0) || (y >= GRID_HEIGHT)
-					|| (z < 0) || (z >= GRID_DEPTH)) {
+				if (   (x < 0) || (x >= grid_width)
+					|| (y < 0) || (y >= grid_height)
+					|| (z < 0) || (z >= grid_depth)) {
 					continue;
 				}
 
-				sum_forces(GRID(x, y, z), particle);
+				sum_forces(grid(x, y, z), particle);
 			}
 		}
 	}
 }
 
-void update_forces(int i, int j, int k) {
-	GridElement &grid_element = GRID(i, j, k);
+void SphFluidSolver::update_forces(int i, int j, int k) {
+	GridElement &grid_element = grid(i, j, k);
 	list<Particle>&plist = grid_element.particles;
 	for (list<Particle>::iterator piter = plist.begin(); piter != plist.end(); piter++) {
 		sum_all_forces(i, j, k, *piter);
 	}
 }
 
-inline void update_particle(Particle &particle) {
+inline void SphFluidSolver::update_particle(Particle &particle) {
 	if (length(particle.color_gradient) > 0.001f) {
 		particle.force +=   -sigma * particle.color_laplacian
 		                  * normalize(particle.color_gradient);
@@ -171,8 +159,8 @@ inline void update_particle(Particle &particle) {
 	particle.position += timestep * particle.velocity;
 }
 
-void update_particles(int i, int j, int k) {
-	GridElement &grid_element = GRID(i, j, k);
+void SphFluidSolver::update_particles(int i, int j, int k) {
+	GridElement &grid_element = grid(i, j, k);
 
 	list<Particle> &plist = grid_element.particles;
 	for (list<Particle>::iterator piter = plist.begin(); piter != plist.end(); piter++) {
@@ -180,18 +168,18 @@ void update_particles(int i, int j, int k) {
 	}
 }
 
-inline void reset_particle(Particle &particle) {
+inline void SphFluidSolver::reset_particle(Particle &particle) {
 	particle.density = 0.0f;
 	particle.force = Vector3f(0.0f);
 	particle.color_gradient = Vector3f(0.0f);
 	particle.color_laplacian = 0.0f;
 }
 
-void reset_particles() {
-	for (int k = 0; k < GRID_DEPTH; k++) {
-		for (int j = 0; j < GRID_HEIGHT; j++) {
-			for (int i = 0; i < GRID_WIDTH; i++) {
-				GridElement &grid_element = GRID(i, j, k);
+void SphFluidSolver::reset_particles() {
+	for (int k = 0; k < grid_depth; k++) {
+		for (int j = 0; j < grid_height; j++) {
+			for (int i = 0; i < grid_width; i++) {
+				GridElement &grid_element = grid(i, j, k);
 
 				list<Particle> &plist = grid_element.particles;
 				for (list<Particle>::iterator piter = plist.begin(); piter != plist.end(); piter++) {
@@ -202,30 +190,30 @@ void reset_particles() {
 	}
 }
 
-inline void insert_into_grid(int i, int j, int k) {
-	GridElement &grid_element = GRID(i, j, k);
+inline void SphFluidSolver::insert_into_grid(int i, int j, int k) {
+	GridElement &grid_element = grid(i, j, k);
 
 	list<Particle> &plist = grid_element.particles;
 	for (list<Particle>::iterator piter = plist.begin(); piter != plist.end(); piter++) {
-		ADD_TO_GRID(sleeping_grid, *piter);
+		add_to_grid(sleeping_grid_elements, *piter);
 	}
 }
 
-void update_grid() {
-	for (int k = 0; k < GRID_DEPTH; k++) {
-		for (int j = 0; j < GRID_HEIGHT; j++) {
-			for (int i = 0; i < GRID_WIDTH; i++) {
+void SphFluidSolver::update_grid() {
+	for (int k = 0; k < grid_depth; k++) {
+		for (int j = 0; j < grid_height; j++) {
+			for (int i = 0; i < grid_width; i++) {
 				insert_into_grid(i, j, k);
-				GRID(i, j, k).particles.clear();
+				grid(i, j, k).particles.clear();
 			}
 		}
 	}
 
 	/* Swap the grids. */
-	swap(grid, sleeping_grid);
+	swap(grid_elements, sleeping_grid_elements);
 }
 
-void update_densities() {
+void SphFluidSolver::update_densities() {
 	timeval tv1, tv2;
 
 	gettimeofday(&tv1, NULL);
@@ -233,9 +221,9 @@ void update_densities() {
 #if OPEN_MP
 	#pragma omp parallel for
 #endif
-	for (int k = 0; k < GRID_DEPTH; k++) {
-		for (int j = 0; j < GRID_HEIGHT; j++) {
-			for (int i = 0; i < GRID_WIDTH; i++) {
+	for (int k = 0; k < grid_depth; k++) {
+		for (int j = 0; j < grid_height; j++) {
+			for (int i = 0; i < grid_width; i++) {
 				update_densities(i, j, k);
 			}
 		}
@@ -246,7 +234,7 @@ void update_densities() {
 	printf("TIME[update_densities]: %dms\n", time);
 }
 
-void update_forces() {
+void SphFluidSolver::update_forces() {
 	timeval tv1, tv2;
 
 	gettimeofday(&tv1, NULL);
@@ -254,9 +242,9 @@ void update_forces() {
 #if OPEN_MP
 	#pragma omp parallel for
 #endif
-	for (int k = 0; k < GRID_DEPTH; k++) {
-		for (int j = 0; j < GRID_HEIGHT; j++) {
-			for (int i = 0; i < GRID_WIDTH; i++) {
+	for (int k = 0; k < grid_depth; k++) {
+		for (int j = 0; j < grid_height; j++) {
+			for (int i = 0; i < grid_width; i++) {
 				update_forces(i, j, k);
 			}
 		}
@@ -267,7 +255,7 @@ void update_forces() {
 	printf("TIME[update_forces]   : %dms\n", time);
 }
 
-void update_particles() {
+void SphFluidSolver::update_particles() {
 	timeval tv1, tv2;
 
 	gettimeofday(&tv1, NULL);
@@ -275,9 +263,9 @@ void update_particles() {
 #if OPEN_MP
 	#pragma omp parallel for
 #endif
-	for (int k = 0; k < GRID_DEPTH; k++) {
-		for (int j = 0; j < GRID_HEIGHT; j++) {
-			for (int i = 0; i < GRID_WIDTH; i++) {
+	for (int k = 0; k < grid_depth; k++) {
+		for (int j = 0; j < grid_height; j++) {
+			for (int i = 0; i < grid_width; i++) {
 				update_particles(i, j, k);
 			}
 		}
@@ -288,7 +276,7 @@ void update_particles() {
 	printf("TIME[update_particles]: %dms\n", time);
 }
 
-void update(void(*inter_hook)() = NULL, void(*post_hook)() = NULL) {
+void SphFluidSolver::update(void(*inter_hook)(), void(*post_hook)()) {
 	reset_particles();
 
     update_densities();
@@ -309,13 +297,32 @@ void update(void(*inter_hook)() = NULL, void(*post_hook)() = NULL) {
 	update_grid();
 }
 
-void init_particles(Particle *particles, int count) {
-	grid = new GridElement[GRID_WIDTH * GRID_HEIGHT * GRID_DEPTH];
-	sleeping_grid = new GridElement[GRID_WIDTH * GRID_HEIGHT * GRID_DEPTH];
+void SphFluidSolver::init_particles(Particle *particles, int count) {
+	grid_elements = new GridElement[grid_width * grid_height * grid_depth];
+	sleeping_grid_elements = new GridElement[grid_width * grid_height * grid_depth];
 
 	for (int x = 0; x < count; x++) {
 		particles[x].id = x;
-		ADD_TO_GRID(grid, particles[x]);
+		add_to_grid(grid_elements, particles[x]);
 	}
+}
+
+inline GridElement &SphFluidSolver::grid(int i, int j, int k) {
+	return grid_elements[grid_index(i, j, k)];
+}
+
+inline GridElement &SphFluidSolver::sleeping_grid(int i, int j, int k) {
+	return sleeping_grid_elements[grid_index(i, j, k)];
+}
+
+inline int SphFluidSolver::grid_index(int i, int j, int k) {
+	return grid_width * (k * grid_height + j) + i;
+}
+
+inline void SphFluidSolver::add_to_grid(GridElement *target_grid, Particle &particle) {
+	int i = (int) (particle.position.x / core_radius);
+	int j = (int) (particle.position.y / core_radius);
+	int k = (int) (particle.position.z / core_radius);
+	target_grid[grid_index(i, j, k)].particles.push_back(particle);
 }
 
