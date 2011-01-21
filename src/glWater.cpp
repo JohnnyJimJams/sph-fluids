@@ -23,13 +23,23 @@ GLuint sphereId;
 GLfloat rotation_matrix[16];
 Vector3f gravity_direction;
 
-int simulationSteps = 2;
-float collisionRestitution = 1.0f;
-
+int simulation_steps = 2;
+float collision_restitution = 1.0f;
 
 const int particle_count = 2000;
 
+#define SCENE 1
+
+#if SCENE == 1
 SphFluidSolver solver(1.1f, 1000.0f, 0.1f, 1.2f, 2.0f, 1.0f, 0.01f);
+const float gravity = 100.0f;
+const float scale = 1.0f;
+#elif SCENE == 2
+SphFluidSolver solver(0.01f, 0.5f, 0.2f, 600.0f, 3.0f/*?*/, 0.0f, 0.003f);
+const float gravity = 9.81f;
+const float scale = 100.0f;
+#endif
+
 
 
 void init_liquid() {
@@ -46,9 +56,9 @@ void init_liquid() {
 						return;
 					}
 
-					particle_iter->position.x = i;
-					particle_iter->position.y = j;
-					particle_iter->position.z = k;
+					particle_iter->position.x = i / scale;
+					particle_iter->position.y = j / scale;
+					particle_iter->position.z = k / scale;
 					particle_iter++;
 				}
 			}
@@ -57,7 +67,8 @@ void init_liquid() {
 }
 
 void draw_particle(Particle &particle) {
-	glTranslatef(+particle.position.x, +particle.position.y, +particle.position.z);
+	Vector3f p = scale * particle.position;
+	glTranslatef(+p.x, +p.y, +p.z);
 	glCallList(sphereId);
 #if 0
 	glDisable(GL_LIGHTING);
@@ -70,11 +81,11 @@ void draw_particle(Particle &particle) {
 	glEnd();
 	glEnable(GL_LIGHTING);
 #endif
-	glTranslatef(-particle.position.x, -particle.position.y, -particle.position.z);
+	glTranslatef(-p.x, -p.y, -p.z);
 }
 
 void add_gravity_force(Particle &particle) {
-	particle.force += 100.0f * gravity_direction * particle.density / particle.mass;
+	particle.force += gravity * gravity_direction * particle.density / particle.mass;
 }
 
 void add_global_forces() {
@@ -96,10 +107,10 @@ void handle_particle_collision_cylinder(Particle &particle) {
 
 	if (particle.position.y >= HEIGHT - 1) {
 		particle.position.y = HEIGHT - 1;
-		particle.velocity.y *= -collisionRestitution;
+		particle.velocity.y *= -collision_restitution;
 	} else if (particle.position.y < 0.0f) {
 		particle.position.y = 0.0f;
-		particle.velocity.y *= -collisionRestitution;
+		particle.velocity.y *= -collision_restitution;
 	}
 }
 
@@ -112,17 +123,17 @@ void handle_particle_collision_cube(Particle &particle) {
 	float &vy = particle.velocity.y;
 	float &vz = particle.velocity.z;
 
-	if (px < 0 || px > WIDTH) {
-		px = min(max(px, 0.0f), (float) WIDTH);
-		vx *= -collisionRestitution;
+	if (px < 0 || px > WIDTH / scale) {
+		px = min(max(px, 0.0f), (float) WIDTH / scale);
+		vx *= -collision_restitution;
 	}
-	if (py < 0 || py > HEIGHT) {
-		py = min(max(py, 0.0f), (float) HEIGHT);
-		vy *= -collisionRestitution;
+	if (py < 0 || py > HEIGHT / scale) {
+		py = min(max(py, 0.0f), (float) HEIGHT / scale);
+		vy *= -collision_restitution;
 	}
-	if (pz < 0 || pz > DEPTH) {
-		pz = min(max(pz, 0.0f), (float) DEPTH);
-		vz *= -collisionRestitution;
+	if (pz < 0 || pz > DEPTH / scale) {
+		pz = min(max(pz, 0.0f), (float) DEPTH / scale);
+		vz *= -collision_restitution;
 	}
 }
 
@@ -138,6 +149,7 @@ void extract_gravity_direction() {
 	gravity_direction.x = -rotation_matrix[1];
 	gravity_direction.y = -rotation_matrix[5];
 	gravity_direction.z = -rotation_matrix[9];
+	gravity_direction = normalize(gravity_direction);
 }
 
 void init() {
@@ -246,7 +258,7 @@ void display() {
 	timeval tv1, tv2;
 	gettimeofday(&tv1, NULL);
 
-	for (int i = 0; i < simulationSteps; ++i) {
+	for (int i = 0; i < simulation_steps; ++i) {
 		solver.update(add_global_forces, handle_collisions);
 	}
 
