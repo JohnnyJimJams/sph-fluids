@@ -85,7 +85,7 @@ void draw_particle(Particle &particle) {
 }
 
 void add_gravity_force(Particle &particle) {
-	particle.force += gravity * gravity_direction * particle.density / particle.mass;
+	particle.force += gravity * gravity_direction * particle.density;
 }
 
 void add_global_forces() {
