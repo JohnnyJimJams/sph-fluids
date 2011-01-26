@@ -13,6 +13,7 @@ struct GridElement;
 
 
 struct Particle {
+
 	int id;
 	float mass;
 	float density;
@@ -22,11 +23,36 @@ struct Particle {
 	Vector3f color_gradient;
 	float color_laplacian;
 
+	Vector3f viscosity_force;
+	Vector3f pressure_force;
+
 	Particle() { mass = 1.0f; }
 };
 
 struct GridElement {
 	list<Particle> particles;
+};
+
+struct FluidMaterial {
+
+	const float gas_constant;
+	const float mu;
+	const float rest_density;
+	const float sigma;
+	const float point_damping;
+
+	FluidMaterial(
+			float gas_constant,
+			float mu,
+			float rest_density,
+			float sigma,
+			float point_damping)
+	  : gas_constant(gas_constant),
+	    mu(mu),
+	    rest_density(rest_density),
+	    sigma(sigma),
+	    point_damping(point_damping) {
+	}
 };
 
 class SphFluidSolver {
@@ -36,12 +62,9 @@ class SphFluidSolver {
 	const int grid_depth;
 
 	const float core_radius;
-	const float gas_constant;
-	const float mu;
-	const float rest_density;
-	const float point_damping;
-	const float sigma;
 	const float timestep;
+
+	const FluidMaterial material;
 
 	GridElement *grid_elements;
 	GridElement *sleeping_grid_elements;
@@ -49,23 +72,18 @@ class SphFluidSolver {
 public:
 
 	SphFluidSolver(
+			float domain_width,
+			float domain_height,
+			float domain_depth,
 			float core_radius,
-			float gas_constant,
-			float mu,
-			float rest_density,
-			float point_damping,
-			float sigma,
-			float timestep)
-	: grid_width(32),
-	  grid_height(32),
-	  grid_depth(32),
+			float timestep,
+			FluidMaterial material)
+	: grid_width((int) (domain_width / core_radius) + 1),
+	  grid_height((int) (domain_height / core_radius) + 1),
+	  grid_depth((int) (domain_depth / core_radius) + 1),
 	  core_radius(core_radius),
-	  gas_constant(gas_constant),
-	  mu(mu),
-	  rest_density(rest_density),
-	  point_damping(point_damping),
-	  sigma(sigma),
-	  timestep(timestep) {
+	  timestep(timestep),
+	  material(material) {
 
 	}
 

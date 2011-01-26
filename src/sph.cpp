@@ -99,17 +99,21 @@ inline void SphFluidSolver::add_forces(Particle &particle, Particle &neighbour) 
 	}
 
 	/* Compute the pressure force. */
-	Vector3f common = 0.5f * gas_constant * (  (particle.density - rest_density)
-	                                + (neighbour.density - rest_density))
-	         * gradient_pressure_kernel(r, core_radius);
+	Vector3f common = 0.5f * material.gas_constant
+			* ((particle.density - material.rest_density) + (neighbour.density - material.rest_density))
+	        * gradient_pressure_kernel(r, core_radius);
 	particle.force += -neighbour.mass / neighbour.density * common;
+	particle.pressure_force += -neighbour.mass / neighbour.density * common;
 	neighbour.force -= -particle.mass / particle.density * common;
+	neighbour.pressure_force -= -particle.mass / particle.density * common;
 
 	/* Compute the viscosity force. */
-	common = mu * (neighbour.velocity - particle.velocity)
+	common = material.mu * (neighbour.velocity - particle.velocity)
 	         * laplacian_viscosity_kernel(r, core_radius);
 	particle.force += neighbour.mass / neighbour.density * common;
+	particle.viscosity_force += neighbour.mass / neighbour.density * common;
 	neighbour.force -= particle.mass / particle.density * common;
+	neighbour.viscosity_force -= particle.mass / particle.density * common;
 
 	/* Compute the gradient of the color field. */
 	common = gradient_kernel(r, core_radius);
@@ -155,12 +159,12 @@ void SphFluidSolver::update_forces(int i, int j, int k) {
 
 inline void SphFluidSolver::update_particle(Particle &particle) {
 	if (length(particle.color_gradient) > 0.001f) {
-		particle.force +=   -sigma * particle.color_laplacian
+		particle.force +=   -material.sigma * particle.color_laplacian
 		                  * normalize(particle.color_gradient);
 	}
 
 	Vector3f acceleration =   particle.force / particle.density
-	               - point_damping * particle.velocity / particle.mass;
+	               - material.point_damping * particle.velocity / particle.mass;
 	particle.velocity += timestep * acceleration;
 
 	particle.position += timestep * particle.velocity;
@@ -178,6 +182,8 @@ void SphFluidSolver::update_particles(int i, int j, int k) {
 inline void SphFluidSolver::reset_particle(Particle &particle) {
 	particle.density = 0.0f;
 	particle.force = Vector3f(0.0f);
+	particle.viscosity_force = Vector3f(0.0f);
+	particle.pressure_force = Vector3f(0.0f);
 	particle.color_gradient = Vector3f(0.0f);
 	particle.color_laplacian = 0.0f;
 }

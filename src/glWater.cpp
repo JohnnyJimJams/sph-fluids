@@ -18,26 +18,38 @@ int oldX, oldY, rotX = 0, rotY = 0, zoomZ = 0;
 int oldTransX, oldTransY, transX = 0, transY = 0;
 bool zoom, trans;
 
+bool paused = false;
+bool track_gravity = true;
+
 GLuint sphereId;
 
 GLfloat rotation_matrix[16];
 Vector3f gravity_direction;
 
 int simulation_steps = 2;
-float collision_restitution = 1.0f;
 
 const int particle_count = 2000;
 
 #define SCENE 1
 
 #if SCENE == 1
-SphFluidSolver solver(1.1f, 1000.0f, 0.1f, 1.2f, 2.0f, 1.0f, 0.01f);
+FluidMaterial material(1000.0f, 0.1f, 1.2f, 1.0f, 2.0f);
+SphFluidSolver solver(WIDTH, HEIGHT, DEPTH, 1.1f, 0.01f, material);
 const float gravity = 100.0f;
 const float scale = 1.0f;
+float collision_restitution = 1.0f;
 #elif SCENE == 2
-SphFluidSolver solver(0.01f, 0.5f, 0.2f, 600.0f, 3.0f/*?*/, 0.0f, 0.003f);
+FluidMaterial material(0.5f, 0.2f, 600.0f, 0.0f, 3.0f/*?*/);
+SphFluidSolver solver(WIDTH, HEIGHT, DEPTH, 0.011f, 0.003f, material);
 const float gravity = 9.81f;
 const float scale = 100.0f;
+float collision_restitution = 1.0f;
+#elif SCENE == 3
+FluidMaterial material(3.0f, 3.5f, 998.29f, 0.0728f, 3.0f/*?*/);
+SphFluidSolver solver(WIDTH, HEIGHT, DEPTH, 0.0457f, 0.003f, material);
+const float gravity = 9.81f;
+const float scale = 25.0f;
+float collision_restitution = 1.0f;
 #endif
 
 
@@ -76,8 +88,8 @@ void draw_particle(Particle &particle) {
 	glColor3ub(0, 0, 255);
 	glVertex3f(0.0f, 0.0f, 0.0f);
 	glColor3ub(255, 0, 0);
-	pos = normalize(particle.force);
-	glVertex3fv((GLfloat *)&pos);
+	Vector3f pos = particle.pressure_force / particle.density;
+	glVertex3fv((GLfloat *) &pos);
 	glEnd();
 	glEnable(GL_LIGHTING);
 #endif
@@ -146,6 +158,10 @@ void handle_collisions() {
 }
 
 void extract_gravity_direction() {
+	if (!track_gravity) {
+		return;
+	}
+
 	gravity_direction.x = -rotation_matrix[1];
 	gravity_direction.y = -rotation_matrix[5];
 	gravity_direction.z = -rotation_matrix[9];
@@ -215,6 +231,13 @@ void motion(int x, int y) {
 
 void keyboard(unsigned char key, int x, int y) {
 	switch (key) {
+	case ' ':
+		paused = !paused;
+		break;
+	case 'g':
+	case 'G':
+		track_gravity = !track_gravity;
+		break;
 	case 'q':
 	case 'Q':
 	case 0x1bU: /* ESC */
@@ -256,15 +279,18 @@ void display() {
 	extract_gravity_direction();
 
 	timeval tv1, tv2;
-	gettimeofday(&tv1, NULL);
 
-	for (int i = 0; i < simulation_steps; ++i) {
-		solver.update(add_global_forces, handle_collisions);
+	if (!paused) {
+		gettimeofday(&tv1, NULL);
+
+		for (int i = 0; i < simulation_steps; ++i) {
+			solver.update(add_global_forces, handle_collisions);
+		}
+
+		gettimeofday(&tv2, NULL);
+		int simulationTime = 1000 * (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec) / 1000;
+		printf("TIME[simulation]      : %d ms\n", simulationTime);
 	}
-
-	gettimeofday(&tv2, NULL);
-	int simulationTime = 1000 * (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec) / 1000;
-	printf("TIME[simulation]      : %d ms\n", simulationTime);
 
 	gettimeofday(&tv1, NULL);
 	solver.foreach_particle(draw_particle);
